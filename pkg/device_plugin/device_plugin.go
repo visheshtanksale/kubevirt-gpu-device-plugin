@@ -79,7 +79,60 @@ func InitiateDevicePlugin() {
 	//Identifies vGPUs and represents it in appropriate structures
 	createVgpuIDMap()
 	//Creates and starts device plugin
-	createDevicePlugins()
+	if true {
+		createNoNameDevicePlugins()
+	} else {
+		createDevicePlugins()
+	}
+}
+
+func createNoNameDevicePlugins() {
+	var devs []*pluginapi.Device
+	log.Printf("Iommu Map %s", iommuMap)
+	log.Printf("Device Map %s", deviceMap)
+	log.Println("vGPU Map ", vGpuMap)
+	log.Println("GPU vGPU Map ", gpuVgpuMap)
+
+	//Iterate over deivceMap to create device plugin for each type of GPU on the host
+	for _, v := range deviceMap {
+		for _, dev := range v {
+			devs = append(devs, &pluginapi.Device{
+				ID:     dev,
+				Health: pluginapi.Healthy,
+			})
+		}
+	}
+	deviceName := "pgpu"
+
+	log.Printf("DP Name %s", deviceName)
+	dp := NewGenericDevicePlugin(deviceName, "/sys/kernel/iommu_groups/", devs)
+	err := startDevicePlugin(dp)
+	if err != nil {
+		log.Printf("Error starting %s device plugin: %v", dp.deviceName, err)
+	}
+
+	/*devs = nil
+	//Iterate over vGpuMap to create device plugin for each type of vGPU on the host
+	for _, v := range vGpuMap {
+		for _, dev := range v {
+			devs = append(devs, &pluginapi.Device{
+				ID:     dev.addr,
+				Health: pluginapi.Healthy,
+			})
+		}
+	}
+	deviceName = "vgpu"
+	log.Printf("DP Name %s", deviceName)
+	vDp := NewGenericVGpuDevicePlugin(deviceName, vGpuBasePath, devs)
+	err = startVgpuDevicePlugin(vDp) */
+	if err != nil {
+		log.Printf("Error starting %s device plugin: %v", dp.deviceName, err)
+
+		<-stop
+		log.Printf("Shutting down device plugin controller")
+		dp.Stop()
+		//vDp.Stop()
+	}
 }
 
 // Starts gpu pass through and vGPU device plugin
@@ -155,7 +208,7 @@ func startDevicePluginFunc(dp *GenericDevicePlugin) error {
 }
 
 func startVgpuDevicePluginFunc(dp *GenericVGpuDevicePlugin) error {
-	return dp.Start(stop)
+	return nil
 }
 
 // Discovers all Nvidia GPUs which are loaded with VFIO-PCI driver and creates corresponding maps

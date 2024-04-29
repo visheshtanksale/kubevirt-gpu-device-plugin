@@ -351,13 +351,13 @@ func (dpi *GenericDevicePlugin) healthCheck() error {
 		return err
 	}
 	defer watcher.Close()
-
+	log.Println("We are waiting")
 	err = watcher.Add(filepath.Dir(dpi.socketPath))
 	if err != nil {
 		log.Printf("%s: Unable to add device plugin socket path to fsnotify watcher: %v", method, err)
 		return err
 	}
-
+	log.Println("We are still waiting")
 	_, err = os.Stat(path)
 	if err != nil {
 		if !os.IsNotExist(err) {
@@ -365,7 +365,7 @@ func (dpi *GenericDevicePlugin) healthCheck() error {
 			return err
 		}
 	}
-
+	log.Println("We are still still waiting")
 	for _, dev := range dpi.devs {
 		devicePath := filepath.Join(path, dev.ID)
 		err = watcher.Add(devicePath)
@@ -375,7 +375,7 @@ func (dpi *GenericDevicePlugin) healthCheck() error {
 			return err
 		}
 	}
-
+	log.Println("We are here")
 	for {
 		select {
 		case <-dpi.stop:
